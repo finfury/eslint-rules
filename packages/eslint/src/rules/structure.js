@@ -1,3 +1,7 @@
+// Соответствие файловой структуре
+
+
+
 import path from 'path'
 import fs, {constants} from 'fs'
 

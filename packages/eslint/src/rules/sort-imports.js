@@ -1,3 +1,7 @@
+// Сортировка импортов по группам и длине
+
+
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const sortImports = {
 	meta: {

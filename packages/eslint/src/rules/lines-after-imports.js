@@ -1,3 +1,7 @@
+// Пустые строки после импортов
+
+
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const linesAfterImports = {
 	meta: {

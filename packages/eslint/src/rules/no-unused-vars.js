@@ -1,3 +1,6 @@
+// Неиспользуемые переменные
+
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUnusedVars = {
 	meta: {

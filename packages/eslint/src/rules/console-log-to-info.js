@@ -1,3 +1,7 @@
+// Запрет на вывод в консоль
+
+
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const consoleLogToInfo = {
 	meta: {

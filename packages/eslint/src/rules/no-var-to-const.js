@@ -1,3 +1,6 @@
+// Замена var на const
+
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noVarToConst = {
 	meta: {
