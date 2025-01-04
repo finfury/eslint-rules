@@ -5,9 +5,9 @@ import viteLogo from '/vite.svg'
 
 import './App.css'
 
-function App() {
+function App(props) {
 	const a = 5
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState<string>(0)
 
   return (
     <>

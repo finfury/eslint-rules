@@ -8,7 +8,6 @@ import {structure} from '../rules/structure.js'
 
 
 export const javascript = () => {
-
 	return {
 		files: ["src/**/*.js", "src/**/*.ts",],
 		plugins: {

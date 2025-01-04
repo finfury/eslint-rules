@@ -5,6 +5,11 @@
 import path from 'path'
 import fs, {constants} from 'fs'
 
+const errors = {
+	reportedExtraFolders: false,
+	reportedMissingFolders: false,
+	reportedUnexpectedFiles: false,
+}
 
 /** @type {import('eslint').Rule.RuleModule} */
 export const structure = {
@@ -35,52 +40,80 @@ export const structure = {
 	},
 
 	create(context) {
+		let reportedExtraFolders = errors.reportedExtraFolders;
+		let reportedMissingFolders = errors.reportedMissingFolders;
+		let reportedUnexpectedFiles = errors.reportedUnexpectedFiles;
+
 		return {
 			Program(node) {
-				const filename = context.filename
-				const projectRoot = findProjectRoot(path.dirname(filename))
+				const filename = context.filename;
+				const projectRoot = findProjectRoot(path.dirname(filename));
 
 				if (!projectRoot) {
 					context.report({
 						node,
-						message: 'Could not find project root directory.',
+						message: 'Не удалось найти корневую директорию проекта.',
 					});
 					return;
 				}
 
-				const options = context.options[0] || {};
-				const requiredFolders = options.folders || [];
-				const requiredFiles = options.files || [];
-
-				const missingFolders = checkRequiredFolders(projectRoot, requiredFolders);
-				const missingFiles = checkRequiredFiles(projectRoot, requiredFiles);
-
-				missingFolders.forEach(folder => {
+				const srcPath = path.join(projectRoot, 'src');
+				if (!fs.existsSync(srcPath)) {
 					context.report({
 						node,
-						message: `Missing required folder: ${folder}`,
+						message: 'Отсутствует папка src',
 						fix: fixer => {
-							const folderPath = path.join(projectRoot, folder);
-							fs.mkdirSync(folderPath, {recursive: true});
-							return fixer.replaceTextRange([0, 0], `// Created folder: ${folder}\n`);
+							fs.mkdirSync(srcPath);
+							return fixer.replaceTextRange([0, 0], '// Создана папка src\n');
 						},
 					});
-				})
+					return;
+				}
 
-				missingFiles.forEach(file => {
+				const requiredFolders = ['app', 'processes', 'pages', 'widgets', 'features', 'entities', 'shared'];
+				const actualFolders = fs.readdirSync(srcPath).filter(item => fs.statSync(path.join(srcPath, item)).isDirectory());
+
+				// Проверка на наличие лишних папок
+				const extraFolders = actualFolders.filter(folder => !requiredFolders.includes(folder));
+				if (extraFolders.length > 0 && !reportedExtraFolders) {
+					errors.reportedExtraFolders = true;
 					context.report({
 						node,
-						message: `Missing required file: ${file}`,
-						fix: fixer => {
-							const filePath = path.join(projectRoot, file);
-							fs.writeFileSync(filePath, '');
-							return fixer.replaceTextRange([0, 0], `// Created file: ${file}\n`);
-						},
+						message: `Несоответствующие папки: ${extraFolders.join(', ')}. Допускаются только ${requiredFolders.join(', ')}.`,
+						//once: true, // Обеспечивает вывод сообщения только один раз
 					});
-				})
+				}
+
+				// Проверка на отсутствие необходимых папок
+				const missingFolders = requiredFolders.filter(folder => !actualFolders.includes(folder));
+				if (missingFolders.length > 0 && !reportedMissingFolders) {
+					errors.reportedMissingFolders = true;
+					missingFolders.forEach(folder => {
+						context.report({
+							node,
+							message: `Отсутствует требуемая папка: src/${folder}`,
+							//once: true, // Обеспечивает вывод сообщения только один раз
+							fix: fixer => {
+								fs.mkdirSync(path.join(srcPath, folder));
+								fixer.replaceTextRange([0, 0], `// Создана папка: ${folder}\n`);
+							},
+						});
+					});
+				}
+
+				// Проверка на наличие файлов в папке src/
+				const unexpectedFiles = fs.readdirSync(srcPath).filter(item => !fs.statSync(path.join(srcPath, item)).isDirectory());
+				if (unexpectedFiles.length > 0 && !reportedUnexpectedFiles) {
+					errors.reportedUnexpectedFiles = true;
+					context.report({
+						node,
+						message: `Файлов в папке src/ быть не должно: ${unexpectedFiles.join(', ')}.`,
+						//once: true,
+					});
+				}
 			}
 		};
-	}
+	},
 }
 
 function findProjectRoot(filePath) {
